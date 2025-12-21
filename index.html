@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ALIGN TREX 150 DFC - Gestion</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-pattern" aria-hidden="true"></div>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Carnet de bord</p>
+      <h1 id="modelName">ALIGN TREX 150 DFC</h1>
+      <p class="subtitle" id="modelSubtitle">Suivi des vols, batteries, maintenance et stock de pieces.</p>
+      <div class="model-switch">
+        <label>
+          Modele actif
+          <select id="modelSelect"></select>
+        </label>
+      </div>
+    </div>
+    <div class="hero-stats" id="stats">
+      <div class="stat">
+        <span class="stat-label">Vols</span>
+        <span class="stat-value" id="statFlights">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Minutes</span>
+        <span class="stat-value" id="statMinutes">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Batteries</span>
+        <span class="stat-value" id="statBatteries">0</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <nav class="tabs" id="tabsContainer" role="tablist"></nav>
+
+    <section class="card tab-panel" data-tab="flights">
+      <h2>Journal de vols</h2>
+      <form id="flightForm" class="form-grid">
+        <label>
+          Date
+          <input type="date" name="date" required />
+        </label>
+        <label>
+          Duree (minutes)
+          <input type="number" name="duration" min="1" step="1" required />
+        </label>
+        <label>
+          Batterie utilisee
+          <select name="batteryId" id="flightBattery">
+            <option value="">Sans batterie</option>
+          </select>
+        </label>
+        <label class="full">
+          Notes
+          <input type="text" name="notes" maxlength="120" placeholder="Vent, panne, test gyro..." />
+        </label>
+        <button type="submit" class="primary">Ajouter le vol</button>
+      </form>
+      <div class="list" id="flightList"></div>
+    </section>
+
+    <section class="card tab-panel hidden" data-tab="batteries">
+      <h2>Batteries</h2>
+      <form id="batteryForm" class="form-grid">
+        <label>
+          Nom
+          <input type="text" name="name" required placeholder="Turnigy 3S 450" />
+        </label>
+        <label>
+          Numero
+          <input type="text" name="number" placeholder="BAT-001" />
+        </label>
+        <label>
+          Capacite (mAh)
+          <input type="number" name="capacity" min="1" step="1" />
+        </label>
+        <label>
+          Taux de decharge (C)
+          <input type="number" name="dischargeRate" min="0" step="1" />
+        </label>
+        <label>
+          Cellules
+          <input type="number" name="cells" min="1" step="1" />
+        </label>
+        <label>
+          Tension (V)
+          <input type="number" name="voltage" step="0.1" readonly />
+        </label>
+        <label class="full">
+          Notes
+          <input type="text" name="notes" maxlength="120" placeholder="Stockage a 3.8V" />
+        </label>
+        <button type="submit" class="primary">Ajouter la batterie</button>
+      </form>
+      <div class="list" id="batteryList"></div>
+    </section>
+
+    <section class="card tab-panel hidden" data-tab="maintenance">
+      <h2>Maintenance</h2>
+      <form id="maintenanceForm" class="form-grid">
+        <label>
+          Tache
+          <input type="text" name="title" required placeholder="Graissage, controle vis..." />
+        </label>
+        <label>
+          Intervalle (jours)
+          <input type="number" name="intervalDays" min="0" step="1" />
+        </label>
+        <label>
+          Intervalle (vols)
+          <input type="number" name="intervalFlights" min="0" step="1" />
+        </label>
+        <label class="full">
+          Notes
+          <input type="text" name="notes" maxlength="120" />
+        </label>
+        <button type="submit" class="primary">Ajouter la maintenance</button>
+      </form>
+      <div class="list" id="maintenanceList"></div>
+    </section>
+
+    <section class="card tab-panel hidden" data-tab="stock">
+      <h2>Stock de pieces</h2>
+      <form id="stockForm" class="form-grid">
+        <label>
+          Piece
+          <input type="text" name="name" required placeholder="Pales principales" />
+        </label>
+        <label>
+          Reference
+          <input type="text" name="reference" placeholder="H15T001XX" />
+        </label>
+        <label>
+          Quantite
+          <input type="number" name="quantity" min="0" step="1" required />
+        </label>
+        <label>
+          Seuil mini
+          <input type="number" name="minimum" min="0" step="1" />
+        </label>
+        <label class="full">
+          Emplacement / Notes
+          <input type="text" name="location" maxlength="120" placeholder="Boite 2" />
+        </label>
+        <div class="form-actions full">
+          <button type="submit" class="primary" id="stockSubmit">Ajouter la piece</button>
+          <button type="button" class="secondary hidden" id="stockCancel">Annuler modification</button>
+        </div>
+      </form>
+
+      <div class="stock-tools">
+        <label>
+          Tri
+          <select id="stockSortKey">
+            <option value="reference">Reference</option>
+            <option value="quantity">Quantite</option>
+            <option value="name">Nom</option>
+          </select>
+        </label>
+        <label>
+          Ordre
+          <select id="stockSortDir">
+            <option value="asc">Croissant</option>
+            <option value="desc">Decroissant</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="list" id="stockList"></div>
+      <h3>Batteries en stock</h3>
+      <div class="list" id="stockBatteryList"></div>
+    </section>
+
+    <section class="card tab-panel hidden" data-tab="purchases">
+      <h2>Historique des achats</h2>
+      <form id="purchaseForm" class="form-grid">
+        <label>
+          Date
+          <input type="date" name="date" required />
+        </label>
+        <label>
+          Piece
+          <input type="text" name="name" required placeholder="Pales principales" />
+        </label>
+        <label>
+          Reference
+          <input type="text" name="reference" placeholder="H15T001XX" />
+        </label>
+        <label>
+          Quantite
+          <input type="number" name="quantity" min="1" step="1" required />
+        </label>
+        <label>
+          Prix (EUR)
+          <input type="number" name="price" min="0" step="0.01" />
+        </label>
+        <label class="full">
+          Notes
+          <input type="text" name="notes" maxlength="120" />
+        </label>
+        <button type="submit" class="primary">Ajouter l'achat</button>
+      </form>
+      <div class="list" id="purchaseList"></div>
+    </section>
+
+    <section class="card tab-panel hidden" data-tab="backup">
+      <h2>Sauvegarde</h2>
+      <p class="meta">Exportez vos donnees pour les sauvegarder. Importez un fichier JSON pour restaurer.</p>
+      <div class="storage-actions">
+        <button type="button" class="primary" id="exportBtn">Exporter les donnees</button>
+        <button type="button" class="secondary" id="importBtn">Importer un fichier</button>
+        <input type="file" id="importFile" accept="application/json" class="hidden" />
+      </div>
+      <p class="meta" id="importStatus"></p>
+    </section>
+
+    <section class="card tab-panel hidden" data-tab="settings">
+      <h2>Reglages</h2>
+
+      <div class="settings-block">
+        <h3>Couleur</h3>
+        <p class="meta">Choisissez une couleur principale. Elle est sauvegardee automatiquement par modele.</p>
+        <div class="settings-row">
+          <label>
+            Couleur principale
+            <input type="color" id="themeColor" value="#c0501a" />
+          </label>
+          <button type="button" class="secondary" id="themeReset">Reinitialiser</button>
+        </div>
+        <div class="preset-grid" id="themePresets"></div>
+      </div>
+
+      <div class="settings-block">
+        <h3>Modeles</h3>
+        <form id="modelForm" class="form-grid">
+          <label>
+            Nom du modele
+            <input type="text" name="name" required placeholder="ALIGN TREX 150 DFC" />
+          </label>
+          <label>
+            Couleur
+            <input type="color" name="color" value="#c0501a" />
+          </label>
+          <button type="submit" class="primary">Ajouter le modele</button>
+        </form>
+        <div class="list" id="modelList"></div>
+      </div>
+
+      <div class="settings-block">
+        <h3>Ordre des onglets</h3>
+        <p class="meta">Utilisez les fleches pour personnaliser l'ordre des onglets.</p>
+        <div class="list" id="tabOrderList"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Donnees en local uniquement (localStorage). Aucun compte, aucune installation.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
