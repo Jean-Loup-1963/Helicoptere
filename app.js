@@ -786,15 +786,15 @@ const duplicateStock = (id) => {
   const model = getActiveModel();
   const item = model.stock.find((entry) => entry.id === id);
   if (!item) return;
-  const copy = {
-    ...item,
-    id: uid(),
-    name: `${item.name} (copie)`
-  };
-  model.stock.push(copy);
-  saveData(data);
-  renderStock();
-  startEditStock(copy.id);
+  editingStockId = null;
+  stockForm.name.value = item.name ? `${item.name} (copie)` : "";
+  stockForm.reference.value = item.reference || "";
+  stockForm.quantity.value = item.quantity !== undefined && item.quantity !== null ? item.quantity : 0;
+  stockForm.minimum.value = item.minimum !== undefined && item.minimum !== null ? item.minimum : 0;
+  stockForm.location.value = item.location || "";
+  setStockFormMode(false);
+  setActiveTab("stock");
+  stockForm.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
 const addFlight = (form) => {
