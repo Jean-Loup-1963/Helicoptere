@@ -12,10 +12,10 @@
     <div>
       <p class="eyebrow">Carnet de bord</p>
       <h1 id="modelName">ALIGN TREX 150 DFC</h1>
-      <p class="subtitle" id="modelSubtitle">Suivi des vols, batteries, maintenance et stock de pieces.</p>
+      <p class="subtitle" id="modelSubtitle">Suivi des vols, batteries, maintenance et stock de pièces.</p>
       <div class="model-switch">
         <label>
-          Modele actif
+          Modèle actif
           <select id="modelSelect"></select>
         </label>
       </div>
@@ -47,11 +47,11 @@
           <input type="date" name="date" required />
         </label>
         <label>
-          Duree (minutes)
+          Durée (minutes)
           <input type="number" name="duration" min="1" step="1" required />
         </label>
         <label>
-          Batterie utilisee
+          Batterie utilisée
           <select name="batteryId" id="flightBattery">
             <option value="">Sans batterie</option>
           </select>
@@ -73,15 +73,15 @@
           <input type="text" name="name" required placeholder="Turnigy 3S 450" />
         </label>
         <label>
-          Numero
+          Numéro
           <input type="text" name="number" placeholder="BAT-001" />
         </label>
         <label>
-          Capacite (mAh)
+          Capacité (mAh)
           <input type="number" name="capacity" min="1" step="1" />
         </label>
         <label>
-          Taux de decharge (C)
+          Taux de décharge (C)
           <input type="number" name="dischargeRate" min="0" step="1" />
         </label>
         <label>
@@ -102,14 +102,14 @@
         <label>
           Ordre des batteries
           <select id="batterySortKey">
-            <option value="number-asc">Numero (1-9)</option>
-            <option value="number-desc">Numero (9-1)</option>
+            <option value="number-asc">Numéro (1-9)</option>
+            <option value="number-desc">Numéro (9-1)</option>
             <option value="name-asc">Nom (A-Z)</option>
             <option value="name-desc">Nom (Z-A)</option>
           </select>
         </label>
         <label>
-          Numeros
+          Numéros
           <select id="batteryNumberPlacement">
             <option value="first">En haut</option>
             <option value="last">En bas</option>
@@ -123,7 +123,7 @@
       <h2>Maintenance</h2>
       <form id="maintenanceForm" class="form-grid">
         <label>
-          Tache
+          Tâche
           <input type="text" name="title" required placeholder="Graissage, controle vis..." />
         </label>
         <label>
@@ -144,18 +144,18 @@
     </section>
 
     <section class="card tab-panel hidden" data-tab="stock">
-      <h2>Stock de pieces</h2>
+      <h2>Stock de pièces</h2>
       <form id="stockForm" class="form-grid">
         <label>
-          Piece
+          Pièce
           <input type="text" name="name" required placeholder="Pales principales" />
         </label>
         <label>
-          Reference
+          Référence
           <input type="text" name="reference" placeholder="H15T001XX" />
         </label>
         <label>
-          Quantite
+          Quantité
           <input type="number" name="quantity" min="0" step="1" required />
         </label>
         <label>
@@ -167,7 +167,7 @@
           <input type="text" name="location" maxlength="120" placeholder="Boite 2" />
         </label>
         <div class="form-actions full">
-          <button type="submit" class="primary" id="stockSubmit">Ajouter la piece</button>
+          <button type="submit" class="primary" id="stockSubmit">Ajouter la pièce</button>
           <button type="button" class="secondary hidden" id="stockCancel">Annuler modification</button>
         </div>
       </form>
@@ -176,8 +176,8 @@
         <label>
           Tri
           <select id="stockSortKey">
-            <option value="reference">Reference</option>
-            <option value="quantity">Quantite</option>
+            <option value="reference">Référence</option>
+            <option value="quantity">Quantité</option>
             <option value="name">Nom</option>
           </select>
         </label>
@@ -185,7 +185,7 @@
           Ordre
           <select id="stockSortDir">
             <option value="asc">Croissant</option>
-            <option value="desc">Decroissant</option>
+            <option value="desc">Décroissant</option>
           </select>
         </label>
       </div>
@@ -196,14 +196,14 @@
         <label>
           Ordre des batteries
           <select id="stockBatterySort">
-            <option value="number-asc">Numero (1-9)</option>
-            <option value="number-desc">Numero (9-1)</option>
+            <option value="number-asc">Numéro (1-9)</option>
+            <option value="number-desc">Numéro (9-1)</option>
             <option value="name-asc">Nom (A-Z)</option>
             <option value="name-desc">Nom (Z-A)</option>
           </select>
         </label>
         <label>
-          Numeros
+          Numéros
           <select id="stockBatteryNumberPlacement">
             <option value="first">En haut</option>
             <option value="last">En bas</option>
@@ -221,15 +221,15 @@
           <input type="date" name="date" required />
         </label>
         <label>
-          Piece
+          Pièce
           <input type="text" name="name" required placeholder="Pales principales" />
         </label>
         <label>
-          Reference
+          Référence
           <input type="text" name="reference" placeholder="H15T001XX" />
         </label>
         <label>
-          Quantite
+          Quantité
           <input type="number" name="quantity" min="1" step="1" required />
         </label>
         <label>
@@ -247,9 +247,9 @@
 
     <section class="card tab-panel hidden" data-tab="backup">
       <h2>Sauvegarde</h2>
-      <p class="meta">Exportez vos donnees pour les sauvegarder. Importez un fichier JSON pour restaurer.</p>
+      <p class="meta">Exportez vos données pour les sauvegarder. Importez un fichier JSON pour restaurer.</p>
       <div class="storage-actions">
-        <button type="button" class="primary" id="exportBtn">Exporter les donnees</button>
+        <button type="button" class="primary" id="exportBtn">Exporter les données</button>
         <button type="button" class="secondary" id="importBtn">Importer un fichier</button>
         <input type="file" id="importFile" accept="application/json" class="hidden" />
       </div>
@@ -257,47 +257,47 @@
     </section>
 
     <section class="card tab-panel hidden" data-tab="settings">
-      <h2>Reglages</h2>
+      <h2>Réglages</h2>
 
       <div class="settings-block">
         <h3>Couleur</h3>
-        <p class="meta">Choisissez une couleur principale. Elle est sauvegardee automatiquement par modele.</p>
+        <p class="meta">Choisissez une couleur principale. Elle est sauvegardée automatiquement par modèle.</p>
         <div class="settings-row">
           <label>
             Couleur principale
             <input type="color" id="themeColor" value="#c0501a" />
           </label>
-          <button type="button" class="secondary" id="themeReset">Reinitialiser</button>
+          <button type="button" class="secondary" id="themeReset">Réinitialiser</button>
         </div>
         <div class="preset-grid" id="themePresets"></div>
       </div>
 
       <div class="settings-block">
-        <h3>Modeles</h3>
+        <h3>Modèles</h3>
         <form id="modelForm" class="form-grid">
           <label>
-            Nom du modele
+            Nom du modèle
             <input type="text" name="name" required placeholder="ALIGN TREX 150 DFC" />
           </label>
           <label>
             Couleur
             <input type="color" name="color" value="#c0501a" />
           </label>
-          <button type="submit" class="primary">Ajouter le modele</button>
+          <button type="submit" class="primary">Ajouter le modèle</button>
         </form>
         <div class="list" id="modelList"></div>
       </div>
 
       <div class="settings-block">
         <h3>Ordre des onglets</h3>
-        <p class="meta">Utilisez les fleches pour personnaliser l'ordre des onglets.</p>
+        <p class="meta">Utilisez les flèches pour personnaliser l'ordre des onglets.</p>
         <div class="list" id="tabOrderList"></div>
       </div>
     </section>
   </main>
 
   <footer class="footer">
-    <p>Donnees en local uniquement (localStorage). Aucun compte, aucune installation.</p>
+    <p>Données en local uniquement (localStorage). Aucun compte, aucune installation.</p>
   </footer>
 
   <script src="app.js"></script>

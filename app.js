@@ -9,8 +9,9 @@ const TAB_DEFS = [
   { id: "stock", label: "Stock", icon: "S" },
   { id: "purchases", label: "Achats", icon: "A" },
   { id: "backup", label: "Sauvegarde", icon: "D" },
-  { id: "settings", label: "Reglages", icon: "R" }
+  { id: "settings", label: "Réglages", icon: "R" }
 ];
+const MENU_TAB_IDS = new Set(["backup", "settings"]);
 
 const THEME_PRESETS = [
   { name: "Copper", color: "#c0501a" },
@@ -102,7 +103,7 @@ const createModel = (name = DEFAULT_MODEL_NAME, themeColor = DEFAULT_THEME) => (
 
 const normalizeModel = (model) => ({
   id: model.id || uid(),
-  name: model.name || "Modele",
+  name: model.name || "Modèle",
   themeColor: model.themeColor || DEFAULT_THEME,
   flights: coerceArray(model.flights),
   batteries: coerceArray(model.batteries),
@@ -170,10 +171,36 @@ const saveData = (data) => {
 
 let data = loadData();
 let editingStockId = null;
+let tabMenuHandlersReady = false;
 
 const getActiveModel = () => {
   const model = data.models.find((entry) => entry.id === data.activeModelId);
   return model || data.models[0];
+};
+
+const getTabMenuParts = () => {
+  const menu = document.querySelector(".tab-menu");
+  if (!menu) return null;
+  const trigger = menu.querySelector(".menu-trigger");
+  const panel = menu.querySelector(".menu-panel");
+  if (!trigger || !panel) return null;
+  return { menu, trigger, panel };
+};
+
+const closeTabMenu = () => {
+  const parts = getTabMenuParts();
+  if (!parts) return;
+  parts.menu.classList.remove("open");
+  parts.panel.classList.add("hidden");
+  parts.trigger.setAttribute("aria-expanded", "false");
+};
+
+const toggleTabMenu = () => {
+  const parts = getTabMenuParts();
+  if (!parts) return;
+  const isOpen = parts.menu.classList.toggle("open");
+  parts.panel.classList.toggle("hidden", !isOpen);
+  parts.trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
 };
 
 const updateHeader = () => {
@@ -229,7 +256,7 @@ const renderFlights = () => {
   const model = getActiveModel();
   flightList.innerHTML = "";
   if (model.flights.length === 0) {
-    flightList.innerHTML = "<p class=\"meta\">Aucun vol enregistre.</p>";
+    flightList.innerHTML = "<p class=\"meta\">Aucun vol enregistré.</p>";
     return;
   }
   const sorted = [...model.flights].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -279,7 +306,7 @@ const renderBatteries = () => {
         </div>
       </header>
       <div class="meta">${battery.capacity ? battery.capacity + " mAh" : "-"} ${battery.cells ? "| " + battery.cells + "S" : ""} ${voltage !== "-" ? "| " + voltage : ""} ${discharge !== "-" ? "| " + discharge : ""}</div>
-      <div class="meta">Derniere utilisation: ${formatDate(battery.lastUsed)}</div>
+      <div class="meta">Dernière utilisation: ${formatDate(battery.lastUsed)}</div>
       <div class="tags">
         <span class="tag">${cycleLabel}</span>
       </div>
@@ -319,7 +346,7 @@ const renderMaintenance = () => {
   const model = getActiveModel();
   maintenanceList.innerHTML = "";
   if (model.maintenance.length === 0) {
-    maintenanceList.innerHTML = "<p class=\"meta\">Aucune tache.</p>";
+    maintenanceList.innerHTML = "<p class=\"meta\">Aucune tâche.</p>";
     return;
   }
   model.maintenance.forEach((task) => {
@@ -327,7 +354,7 @@ const renderMaintenance = () => {
     const item = document.createElement("div");
     item.className = "item";
     const statusTag = status.isDue ? "tag warn" : "tag ok";
-    const statusText = status.isDue ? "A faire" : "OK";
+    const statusText = status.isDue ? "À faire" : "OK";
     const nextDateLabel = status.nextDate ? formatDate(status.nextDate) : "-";
     const nextFlightLabel = status.nextFlight !== null ? status.nextFlight + " vols" : "-";
     item.innerHTML = `
@@ -343,7 +370,7 @@ const renderMaintenance = () => {
         <span class="tag">Prochaine date: ${nextDateLabel}</span>
         <span class="tag">Prochain vol: ${nextFlightLabel}</span>
       </div>
-      <div class="meta">Derniere: ${formatDate(task.lastDoneDate)} | Vols: ${task.lastDoneFlights !== undefined && task.lastDoneFlights !== null ? task.lastDoneFlights : 0}</div>
+      <div class="meta">Dernière: ${formatDate(task.lastDoneDate)} | Vols: ${task.lastDoneFlights !== undefined && task.lastDoneFlights !== null ? task.lastDoneFlights : 0}</div>
       <div class="meta">${task.notes ? task.notes : ""}</div>
     `;
     const [doneBtn, deleteBtn] = item.querySelectorAll("button");
@@ -428,7 +455,7 @@ const renderStock = () => {
   const model = getActiveModel();
   stockList.innerHTML = "";
   if (model.stock.length === 0) {
-    stockList.innerHTML = "<p class=\"meta\">Aucune piece.</p>";
+    stockList.innerHTML = "<p class=\"meta\">Aucune pièce.</p>";
   }
   const sorted = sortStock(model.stock);
   sorted.forEach((itemData) => {
@@ -448,7 +475,7 @@ const renderStock = () => {
       </header>
       <div class="tags">
         <span class="tag">Ref: ${itemData.reference ? itemData.reference : "-"}</span>
-        <span class="tag">Quantite: ${itemData.quantity}</span>
+        <span class="tag">Quantité: ${itemData.quantity}</span>
         <span class="tag">Mini: ${itemData.minimum !== undefined && itemData.minimum !== null ? itemData.minimum : 0}</span>
         <span class="${statusTag}">${statusText}</span>
       </div>
@@ -486,13 +513,13 @@ const renderStockBatteries = () => {
         <h3>${battery.name}</h3>
       </header>
       <div class="tags">
-        <span class="tag">Numero: ${number}</span>
+        <span class="tag">Numéro: ${number}</span>
         <span class="tag">${battery.capacity ? battery.capacity + " mAh" : "-"}</span>
         <span class="tag">${battery.cells ? battery.cells + "S" : "-"}</span>
         <span class="tag">${voltage}</span>
         <span class="tag">${discharge}</span>
       </div>
-      <div class="meta">Cycles: ${battery.cycles || 0} | Derniere: ${formatDate(battery.lastUsed)}</div>
+      <div class="meta">Cycles: ${battery.cycles || 0} | Dernière: ${formatDate(battery.lastUsed)}</div>
       <div class="meta">${battery.notes ? battery.notes : ""}</div>
     `;
     stockBatteryList.append(item);
@@ -502,7 +529,7 @@ const renderPurchases = () => {
   const model = getActiveModel();
   purchaseList.innerHTML = "";
   if (model.purchases.length === 0) {
-    purchaseList.innerHTML = "<p class=\"meta\">Aucun achat enregistre.</p>";
+    purchaseList.innerHTML = "<p class=\"meta\">Aucun achat enregistré.</p>";
     return;
   }
   const sorted = [...model.purchases].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -519,7 +546,7 @@ const renderPurchases = () => {
       </header>
       <div class="tags">
         <span class="tag">Ref: ${purchase.reference || "-"}</span>
-        <span class="tag">Quantite: ${purchase.quantity}</span>
+        <span class="tag">Quantité: ${purchase.quantity}</span>
         <span class="tag">Prix: ${price}</span>
       </div>
       <div class="meta">${purchase.notes ? purchase.notes : ""}</div>
@@ -530,16 +557,14 @@ const renderPurchases = () => {
 };
 
 const renderTabs = () => {
-  const order = normalizeTabOrder(data.settings.tabOrder);
+  const order = normalizeTabOrder(data.settings.tabOrder).filter((tabId) => !MENU_TAB_IDS.has(tabId));
   tabsContainer.innerHTML = "";
   order.forEach((tabId) => {
     const tab = TAB_DEFS.find((entry) => entry.id === tabId);
     if (!tab) return;
     const button = document.createElement("button");
     button.type = "button";
-    const isRightTab = tab.id === "backup" || tab.id === "settings";
-    const needsSpacer = tab.id === "backup";
-    button.className = `tab${isRightTab ? " tab-right" : ""}${needsSpacer ? " tab-spacer" : ""}`;
+    button.className = "tab";
     button.setAttribute("role", "tab");
     button.setAttribute("aria-selected", "false");
     button.dataset.tab = tab.id;
@@ -547,6 +572,53 @@ const renderTabs = () => {
     button.addEventListener("click", () => setActiveTab(tab.id));
     tabsContainer.append(button);
   });
+
+  const menuTabs = TAB_DEFS.filter((tab) => MENU_TAB_IDS.has(tab.id));
+  if (menuTabs.length) {
+    const menu = document.createElement("div");
+    menu.className = "tab-menu";
+    menu.innerHTML = `
+      <button type="button" class="tab menu-trigger" aria-haspopup="menu" aria-expanded="false" title="Paramètres">
+        <span class="tab-icon">⚙</span><span>Paramètres</span>
+      </button>
+      <div class="menu-panel hidden" role="menu">
+        ${menuTabs.map((tab) => `
+          <button type="button" class="menu-item" role="menuitem" data-tab="${tab.id}">
+            <span class="menu-icon">${tab.icon}</span><span>${tab.label}</span>
+          </button>
+        `).join("")}
+      </div>
+    `;
+    const trigger = menu.querySelector(".menu-trigger");
+
+    trigger.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleTabMenu();
+    });
+
+    menu.querySelectorAll("[data-tab]").forEach((item) => {
+      item.addEventListener("click", () => {
+        closeTabMenu();
+        setActiveTab(item.dataset.tab);
+      });
+    });
+
+    tabsContainer.append(menu);
+
+    if (!tabMenuHandlersReady) {
+      document.addEventListener("click", (event) => {
+        if (!event.target.closest(".tab-menu")) {
+          closeTabMenu();
+        }
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeTabMenu();
+        }
+      });
+      tabMenuHandlersReady = true;
+    }
+  }
 };
 
 const setActiveTab = (tabId) => {
@@ -557,6 +629,12 @@ const setActiveTab = (tabId) => {
     tab.classList.toggle("active", active);
     tab.setAttribute("aria-selected", active ? "true" : "false");
   });
+  const menuTrigger = document.querySelector(".menu-trigger");
+  if (menuTrigger) {
+    const isMenuActive = MENU_TAB_IDS.has(tabId);
+    menuTrigger.classList.toggle("active", isMenuActive);
+    menuTrigger.setAttribute("aria-selected", isMenuActive ? "true" : "false");
+  }
   panels.forEach((panel) => {
     panel.classList.toggle("hidden", panel.dataset.tab !== tabId);
   });
@@ -565,7 +643,7 @@ const setActiveTab = (tabId) => {
 };
 
 const renderTabOrderList = () => {
-  const order = normalizeTabOrder(data.settings.tabOrder);
+  const order = normalizeTabOrder(data.settings.tabOrder).filter((tabId) => !MENU_TAB_IDS.has(tabId));
   tabOrderList.innerHTML = "";
   order.forEach((tabId, index) => {
     const tab = TAB_DEFS.find((entry) => entry.id === tabId);
@@ -607,10 +685,10 @@ const moveTab = (tabId, direction) => {
 
 const setStockFormMode = (isEditing) => {
   if (isEditing) {
-    stockSubmit.textContent = "Mettre a jour la piece";
+    stockSubmit.textContent = "Mettre à jour la pièce";
     stockCancel.classList.remove("hidden");
   } else {
-    stockSubmit.textContent = "Ajouter la piece";
+    stockSubmit.textContent = "Ajouter la pièce";
     stockCancel.classList.add("hidden");
   }
 };
@@ -856,7 +934,7 @@ const importData = (file) => {
     try {
       const parsed = JSON.parse(reader.result);
       const nextData = normalizeImported(parsed);
-      const confirmReplace = confirm("Importer ces donnees va remplacer les donnees actuelles. Continuer ?");
+      const confirmReplace = confirm("Importer ces données va remplacer les données actuelles. Continuer ?");
       if (!confirmReplace) return;
       data = nextData;
       saveData(data);
@@ -865,7 +943,7 @@ const importData = (file) => {
       renderAll();
       renderTabs();
       setActiveTab(data.settings.lastTab || "flights");
-      importStatus.textContent = "Import termine.";
+      importStatus.textContent = "Import terminé.";
     } catch (error) {
       importStatus.textContent = "Import impossible: fichier invalide.";
     }
@@ -996,7 +1074,7 @@ const addModel = (form) => {
 const renameModel = (id) => {
   const model = data.models.find((entry) => entry.id === id);
   if (!model) return;
-  const nextName = prompt("Nouveau nom du modele", model.name);
+  const nextName = prompt("Nouveau nom du modèle", model.name);
   if (!nextName) return;
   model.name = nextName.trim();
   saveData(data);
@@ -1006,12 +1084,12 @@ const renameModel = (id) => {
 
 const deleteModel = (id) => {
   if (data.models.length <= 1) {
-    alert("Impossible de supprimer le dernier modele.");
+    alert("Impossible de supprimer le dernier modèle.");
     return;
   }
   const model = data.models.find((entry) => entry.id === id);
   if (!model) return;
-  const confirmDelete = confirm(`Supprimer le modele ${model.name} ?`);
+  const confirmDelete = confirm(`Supprimer le modèle ${model.name} ?`);
   if (!confirmDelete) return;
   data.models = data.models.filter((entry) => entry.id !== id);
   if (data.activeModelId === id) {
