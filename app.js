@@ -58,6 +58,7 @@ const maintenanceList = el("maintenanceList");
 const stockList = el("stockList");
 const stockBatteryList = el("stockBatteryList");
 const purchaseList = el("purchaseList");
+const purchaseStoreList = el("purchaseStoreList");
 const modelList = el("modelList");
 const tabOrderList = el("tabOrderList");
 const tabsContainer = el("tabsContainer");
@@ -227,8 +228,9 @@ const renderBatteryOptions = () => {
   const sorted = sortBatteries(model.batteries);
   sorted.forEach((battery) => {
     const option = document.createElement("option");
+    const number = battery.number ? ` - ${battery.number}` : "";
     option.value = battery.id;
-    option.textContent = battery.name;
+    option.textContent = `${battery.name}${number}`;
     flightBattery.append(option);
   });
   flightBattery.value = current;
@@ -250,6 +252,21 @@ const voltageFromCells = (cells) => {
 const getBatteryById = (id) => {
   const model = getActiveModel();
   return model.batteries.find((battery) => battery.id === id);
+};
+
+const renderPurchaseStoreOptions = () => {
+  if (!purchaseStoreList) return;
+  const model = getActiveModel();
+  const stores = model.purchases
+    .map((purchase) => (purchase.store || "").trim())
+    .filter((store) => store.length > 0);
+  const unique = Array.from(new Set(stores)).sort((a, b) => a.localeCompare(b, "fr-FR"));
+  purchaseStoreList.innerHTML = "";
+  unique.forEach((store) => {
+    const option = document.createElement("option");
+    option.value = store;
+    purchaseStoreList.append(option);
+  });
 };
 
 const renderFlights = () => {
@@ -527,6 +544,7 @@ const renderStockBatteries = () => {
 };
 const renderPurchases = () => {
   const model = getActiveModel();
+  renderPurchaseStoreOptions();
   purchaseList.innerHTML = "";
   if (model.purchases.length === 0) {
     purchaseList.innerHTML = "<p class=\"meta\">Aucun achat enregistré.</p>";
@@ -544,11 +562,12 @@ const renderPurchases = () => {
           <button class="danger" data-action="delete">Supprimer</button>
         </div>
       </header>
-      <div class="tags">
-        <span class="tag">Ref: ${purchase.reference || "-"}</span>
-        <span class="tag">Quantité: ${purchase.quantity}</span>
-        <span class="tag">Prix: ${price}</span>
-      </div>
+        <div class="tags">
+          <span class="tag">Ref: ${purchase.reference || "-"}</span>
+          <span class="tag">Quantité: ${purchase.quantity}</span>
+          <span class="tag">Prix: ${price}</span>
+          <span class="tag">Magasin: ${purchase.store || "-"}</span>
+        </div>
       <div class="meta">${purchase.notes ? purchase.notes : ""}</div>
     `;
     item.querySelector("button").addEventListener("click", () => deletePurchase(purchase.id));
@@ -622,6 +641,7 @@ const renderTabs = () => {
 };
 
 const setActiveTab = (tabId) => {
+  const previousTab = data.settings.lastTab;
   const panels = Array.from(document.querySelectorAll(".tab-panel"));
   const tabs = Array.from(document.querySelectorAll(".tab"));
   tabs.forEach((tab) => {
@@ -638,6 +658,15 @@ const setActiveTab = (tabId) => {
   panels.forEach((panel) => {
     panel.classList.toggle("hidden", panel.dataset.tab !== tabId);
   });
+  if (previousTab && previousTab !== tabId) {
+    if (flightForm) flightForm.reset();
+    if (batteryForm) batteryForm.reset();
+    if (maintenanceForm) maintenanceForm.reset();
+    if (purchaseForm) purchaseForm.reset();
+    if (modelForm) modelForm.reset();
+    if (stockForm) resetStockForm();
+    updateBatteryVoltageField();
+  }
   data.settings.lastTab = tabId;
   saveData(data);
 };
@@ -899,6 +928,7 @@ const addPurchase = (form) => {
     reference: payload.get("reference").trim(),
     quantity: Number(payload.get("quantity")) || 1,
     price: payload.get("price") ? Number(payload.get("price")) : null,
+    store: (payload.get("store") || "").trim(),
     notes: payload.get("notes").trim()
   };
   model.purchases.push(purchase);

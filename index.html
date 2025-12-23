@@ -172,6 +172,7 @@
         </div>
       </form>
 
+      <h3 class="stock-subtitle">Pièces en stock</h3>
       <div class="stock-tools">
         <label>
           Tri
@@ -191,7 +192,7 @@
       </div>
 
       <div class="list" id="stockList"></div>
-      <h3>Batteries en stock</h3>
+      <h3 class="stock-subtitle">Batteries en stock</h3>
       <div class="stock-tools">
         <label>
           Ordre des batteries
@@ -236,12 +237,17 @@
           Prix (EUR)
           <input type="number" name="price" min="0" step="0.01" />
         </label>
+        <label>
+          Magasin
+          <input type="text" name="store" list="purchaseStoreList" placeholder="Sélectionner ou saisir un magasin" />
+        </label>
         <label class="full">
           Notes
           <input type="text" name="notes" maxlength="120" />
         </label>
         <button type="submit" class="primary">Ajouter l'achat</button>
       </form>
+      <datalist id="purchaseStoreList"></datalist>
       <div class="list" id="purchaseList"></div>
     </section>
 
@@ -297,7 +303,7 @@
   </main>
 
   <footer class="footer">
-    <p>Données en local uniquement (localStorage). Aucun compte, aucune installation.</p>
+    <p>Données en local uniquement (localStorage). Aucun compte, aucune installation. — © Jean-Loup</p>
   </footer>
 
   <script src="app.js"></script>

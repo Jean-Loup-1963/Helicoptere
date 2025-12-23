@@ -43,7 +43,8 @@ body {
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 1000;
   color: var(--muted);
   margin: 0 0 8px;
 }
@@ -54,6 +55,10 @@ h1 {
   margin: 0 0 8px;
 }
 
+#modelName {
+  color: var(--accent);
+}
+
 .subtitle {
   margin: 0;
   color: var(--muted);
@@ -62,6 +67,10 @@ h1 {
 .model-switch {
   margin-top: 12px;
   max-width: 260px;
+}
+
+.model-switch label {
+  font-weight: 1000;
 }
 
 .hero-stats {
@@ -212,11 +221,18 @@ h1 {
 h2 {
   margin-top: 0;
   font-size: 20px;
+  color: var(--accent);
 }
 
 h3 {
   margin: 0 0 8px;
   font-size: 16px;
+}
+
+.stock-subtitle {
+  margin-top: 18px;
+  color: var(--accent);
+  font-size: 18px;
 }
 
 .form-grid {
@@ -417,6 +433,7 @@ button:hover {
   color: var(--muted);
   font-size: 12px;
 }
+
 
 @keyframes rise-in {
   from {
