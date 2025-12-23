@@ -1268,8 +1268,8 @@ const init = () => {
   renderTabs();
   renderThemePresets();
   renderAll();
-  const lastTab = data.settings.lastTab || "flights";
-  setActiveTab(lastTab);
+  data.settings.lastTab = "flights";
+  setActiveTab("flights");
   stockSortKey.value = getStockSort().key;
   stockSortDir.value = getStockSort().dir;
   syncBatterySortControls();
