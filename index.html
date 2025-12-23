@@ -98,6 +98,24 @@
         </label>
         <button type="submit" class="primary">Ajouter la batterie</button>
       </form>
+      <div class="stock-tools">
+        <label>
+          Ordre des batteries
+          <select id="batterySortKey">
+            <option value="number-asc">Numero (1-9)</option>
+            <option value="number-desc">Numero (9-1)</option>
+            <option value="name-asc">Nom (A-Z)</option>
+            <option value="name-desc">Nom (Z-A)</option>
+          </select>
+        </label>
+        <label>
+          Numeros
+          <select id="batteryNumberPlacement">
+            <option value="first">En haut</option>
+            <option value="last">En bas</option>
+          </select>
+        </label>
+      </div>
       <div class="list" id="batteryList"></div>
     </section>
 
@@ -174,6 +192,24 @@
 
       <div class="list" id="stockList"></div>
       <h3>Batteries en stock</h3>
+      <div class="stock-tools">
+        <label>
+          Ordre des batteries
+          <select id="stockBatterySort">
+            <option value="number-asc">Numero (1-9)</option>
+            <option value="number-desc">Numero (9-1)</option>
+            <option value="name-asc">Nom (A-Z)</option>
+            <option value="name-desc">Nom (Z-A)</option>
+          </select>
+        </label>
+        <label>
+          Numeros
+          <select id="stockBatteryNumberPlacement">
+            <option value="first">En haut</option>
+            <option value="last">En bas</option>
+          </select>
+        </label>
+      </div>
       <div class="list" id="stockBatteryList"></div>
     </section>
 
@@ -267,3 +303,5 @@
   <script src="app.js"></script>
 </body>
 </html>
+
+

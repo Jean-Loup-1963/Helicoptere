@@ -24,6 +24,8 @@ const THEME_PRESETS = [
 const defaultSettings = {
   tabOrder: TAB_DEFS.map((tab) => tab.id),
   stockSort: { key: "reference", dir: "asc" },
+  stockBatterySort: { key: "number", dir: "asc" },
+  stockBatteryNumberPlacement: "first",
   lastTab: "flights"
 };
 
@@ -68,6 +70,10 @@ const stockSubmit = el("stockSubmit");
 const stockCancel = el("stockCancel");
 const stockSortKey = el("stockSortKey");
 const stockSortDir = el("stockSortDir");
+const stockBatterySort = el("stockBatterySort");
+const stockBatteryNumberPlacement = el("stockBatteryNumberPlacement");
+const batterySortKey = el("batterySortKey");
+const batteryNumberPlacement = el("batteryNumberPlacement");
 const exportBtn = el("exportBtn");
 const importBtn = el("importBtn");
 const importFile = el("importFile");
@@ -118,6 +124,8 @@ const normalizeSettings = (settings = {}) => ({
   ...cloneData(defaultSettings),
   ...settings,
   stockSort: { ...defaultSettings.stockSort, ...(settings.stockSort || {}) },
+  stockBatterySort: { ...defaultSettings.stockBatterySort, ...(settings.stockBatterySort || {}) },
+  stockBatteryNumberPlacement: settings.stockBatteryNumberPlacement || defaultSettings.stockBatteryNumberPlacement,
   tabOrder: normalizeTabOrder(settings.tabOrder || defaultSettings.tabOrder)
 });
 
@@ -189,7 +197,8 @@ const renderBatteryOptions = () => {
   const model = getActiveModel();
   const current = flightBattery.value;
   flightBattery.innerHTML = '<option value="">Sans batterie</option>';
-  model.batteries.forEach((battery) => {
+  const sorted = sortBatteries(model.batteries);
+  sorted.forEach((battery) => {
     const option = document.createElement("option");
     option.value = battery.id;
     option.textContent = battery.name;
@@ -250,7 +259,8 @@ const renderBatteries = () => {
     batteryList.innerHTML = "<p class=\"meta\">Aucune batterie.</p>";
     return;
   }
-  model.batteries.forEach((battery) => {
+  const sorted = sortBatteries(model.batteries);
+  sorted.forEach((battery) => {
     const item = document.createElement("div");
     item.className = "item";
     const cycleLabel = battery.cycles ? `${battery.cycles} cycles` : "0 cycle";
@@ -344,6 +354,8 @@ const renderMaintenance = () => {
 };
 
 const getStockSort = () => data.settings.stockSort || defaultSettings.stockSort;
+const getBatteryStockSort = () => data.settings.stockBatterySort || defaultSettings.stockBatterySort;
+const getBatteryNumberPlacement = () => data.settings.stockBatteryNumberPlacement || defaultSettings.stockBatteryNumberPlacement;
 
 const sortStock = (items) => {
   const { key, dir } = getStockSort();
@@ -359,6 +371,57 @@ const sortStock = (items) => {
   });
   if (dir === "desc") sorted.reverse();
   return sorted;
+};
+
+const sortBatteries = (batteries) => {
+  const collator = new Intl.Collator("fr-FR", { numeric: true, sensitivity: "base" });
+  const { key, dir } = getBatteryStockSort();
+  const numberPlacement = getBatteryNumberPlacement();
+  const sorted = [...batteries].sort((a, b) => {
+    const numberA = (a.number || "").trim();
+    const numberB = (b.number || "").trim();
+    const nameA = (a.name || "").trim();
+    const nameB = (b.name || "").trim();
+    const hasNumberA = numberA.length > 0;
+    const hasNumberB = numberB.length > 0;
+    const compareNumber = () => {
+      if (hasNumberA && hasNumberB) {
+        const numberCompare = collator.compare(numberA, numberB);
+        if (numberCompare !== 0) return numberCompare;
+      }
+      if (hasNumberA !== hasNumberB) {
+        return numberPlacement === "first" ? (hasNumberA ? -1 : 1) : (hasNumberA ? 1 : -1);
+      }
+      return 0;
+    };
+
+    if (key === "name") {
+      const nameCompare = collator.compare(nameA, nameB);
+      if (nameCompare !== 0) return nameCompare;
+    }
+
+    const numberCompare = compareNumber();
+    if (numberCompare !== 0) return numberCompare;
+
+    if (key !== "name") {
+      const nameCompare = collator.compare(nameA, nameB);
+      if (nameCompare !== 0) return nameCompare;
+    }
+
+    return 0;
+  });
+  if (dir === "desc") sorted.reverse();
+  return sorted;
+};
+
+const syncBatterySortControls = () => {
+  const batterySort = getBatteryStockSort();
+  const placement = getBatteryNumberPlacement();
+  const sortValue = `${batterySort.key}-${batterySort.dir}`;
+  if (stockBatterySort) stockBatterySort.value = sortValue;
+  if (batterySortKey) batterySortKey.value = sortValue;
+  if (stockBatteryNumberPlacement) stockBatteryNumberPlacement.value = placement;
+  if (batteryNumberPlacement) batteryNumberPlacement.value = placement;
 };
 
 const renderStock = () => {
@@ -408,18 +471,8 @@ const renderStockBatteries = () => {
     stockBatteryList.innerHTML = "<p class=\"meta\">Aucune batterie en stock.</p>";
     return;
   }
-  const collator = new Intl.Collator("fr-FR", { numeric: true, sensitivity: "base" });
-  const sorted = [...model.batteries].sort((a, b) => {
-    const numberA = (a.number || "").trim();
-    const numberB = (b.number || "").trim();
-    if (numberA || numberB) {
-      const numberCompare = collator.compare(numberA, numberB);
-      if (numberCompare !== 0) return numberCompare;
-    }
-    const nameA = (a.name || "").trim();
-    const nameB = (b.name || "").trim();
-    return collator.compare(nameA, nameB);
-  });
+  const sorted = sortBatteries(model.batteries);
+
   sorted.forEach((battery) => {
     const item = document.createElement("div");
     item.className = "item";
@@ -1020,6 +1073,39 @@ stockSortDir.addEventListener("change", (event) => {
   renderStock();
 });
 
+const handleBatterySortChange = (event) => {
+  const [key, dir] = event.target.value.split("-");
+  data.settings.stockBatterySort = { key, dir };
+  saveData(data);
+  syncBatterySortControls();
+  renderBatteries();
+  renderStockBatteries();
+};
+
+const handleBatteryPlacementChange = (event) => {
+  data.settings.stockBatteryNumberPlacement = event.target.value;
+  saveData(data);
+  syncBatterySortControls();
+  renderBatteries();
+  renderStockBatteries();
+};
+
+if (stockBatterySort) {
+  stockBatterySort.addEventListener("change", handleBatterySortChange);
+}
+
+if (batterySortKey) {
+  batterySortKey.addEventListener("change", handleBatterySortChange);
+}
+
+if (stockBatteryNumberPlacement) {
+  stockBatteryNumberPlacement.addEventListener("change", handleBatteryPlacementChange);
+}
+
+if (batteryNumberPlacement) {
+  batteryNumberPlacement.addEventListener("change", handleBatteryPlacementChange);
+}
+
 purchaseForm.addEventListener("submit", (event) => {
   event.preventDefault();
   addPurchase(event.target);
@@ -1078,7 +1164,19 @@ const init = () => {
   setActiveTab(lastTab);
   stockSortKey.value = getStockSort().key;
   stockSortDir.value = getStockSort().dir;
+  syncBatterySortControls();
   updateBatteryVoltageField();
 };
 
 init();
+
+
+
+
+
+
+
+
+
+
+
