@@ -70,6 +70,7 @@ const statBatteries = el("statBatteries");
 
 const stockSubmit = el("stockSubmit");
 const stockCancel = el("stockCancel");
+const batterySubmit = el("batterySubmit");
 const stockSortKey = el("stockSortKey");
 const stockSortDir = el("stockSortDir");
 const stockBatterySort = el("stockBatterySort");
@@ -172,6 +173,7 @@ const saveData = (data) => {
 
 let data = loadData();
 let editingStockId = null;
+let editingBatteryId = null;
 let tabMenuHandlersReady = false;
 
 const getActiveModel = () => {
@@ -317,6 +319,7 @@ const renderBatteries = () => {
       <header>
         <h3>${battery.name} ${number}</h3>
         <div class="actions">
+          <button class="secondary" data-action="edit">Modifier</button>
           <button class="secondary" data-action="cycle">+1 cycle</button>
           <button class="secondary" data-action="duplicate">Dupliquer</button>
           <button class="danger" data-action="delete">Supprimer</button>
@@ -329,7 +332,8 @@ const renderBatteries = () => {
       </div>
       <div class="meta">${battery.notes ? battery.notes : ""}</div>
     `;
-    const [cycleBtn, duplicateBtn, deleteBtn] = item.querySelectorAll("button");
+    const [editBtn, cycleBtn, duplicateBtn, deleteBtn] = item.querySelectorAll("button");
+    editBtn.addEventListener("click", () => startEditBattery(battery.id));
     cycleBtn.addEventListener("click", () => incrementCycle(battery.id));
     duplicateBtn.addEventListener("click", () => duplicateBattery(battery.id));
     deleteBtn.addEventListener("click", () => deleteBattery(battery.id));
@@ -660,7 +664,7 @@ const setActiveTab = (tabId) => {
   });
   if (previousTab && previousTab !== tabId) {
     if (flightForm) flightForm.reset();
-    if (batteryForm) batteryForm.reset();
+    if (batteryForm) resetBatteryForm();
     if (maintenanceForm) maintenanceForm.reset();
     if (purchaseForm) purchaseForm.reset();
     if (modelForm) modelForm.reset();
@@ -722,10 +726,42 @@ const setStockFormMode = (isEditing) => {
   }
 };
 
+const setBatteryFormMode = (isEditing) => {
+  if (!batterySubmit) return;
+  batterySubmit.textContent = isEditing ? "Mettre à jour la batterie" : "Ajouter la batterie";
+};
+
+const resetBatteryForm = () => {
+  editingBatteryId = null;
+  if (!batteryForm) return;
+  batteryForm.reset();
+  setBatteryFormMode(false);
+  updateBatteryVoltageField();
+};
+
 const resetStockForm = () => {
   editingStockId = null;
   stockForm.reset();
   setStockFormMode(false);
+};
+
+const startEditBattery = (id) => {
+  const model = getActiveModel();
+  const battery = model.batteries.find((entry) => entry.id === id);
+  if (!battery || !batteryForm) return;
+  if (data.settings.lastTab !== "batteries") {
+    setActiveTab("batteries");
+  }
+  editingBatteryId = id;
+  batteryForm.name.value = battery.name || "";
+  batteryForm.number.value = battery.number || "";
+  batteryForm.capacity.value = battery.capacity ?? "";
+  batteryForm.dischargeRate.value = battery.dischargeRate ?? "";
+  batteryForm.cells.value = battery.cells ?? "";
+  batteryForm.notes.value = battery.notes || "";
+  updateBatteryVoltageField();
+  setBatteryFormMode(true);
+  batteryForm.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
 const startEditStock = (id) => {
@@ -793,21 +829,30 @@ const addBattery = (form) => {
   const model = getActiveModel();
   const payload = new FormData(form);
   const cells = Number(payload.get("cells")) || null;
-  const battery = {
-    id: uid(),
+  const next = {
     name: payload.get("name").trim(),
     number: payload.get("number").trim(),
     capacity: Number(payload.get("capacity")) || null,
     dischargeRate: Number(payload.get("dischargeRate")) || null,
     cells,
     voltage: cells ? voltageFromCells(cells) : null,
-    notes: payload.get("notes").trim(),
-    cycles: 0,
-    lastUsed: null
+    notes: payload.get("notes").trim()
   };
-  model.batteries.push(battery);
+  if (editingBatteryId) {
+    const current = model.batteries.find((entry) => entry.id === editingBatteryId);
+    if (current) {
+      Object.assign(current, next);
+    }
+  } else {
+    model.batteries.push({
+      id: uid(),
+      ...next,
+      cycles: 0,
+      lastUsed: null
+    });
+  }
   saveData(data);
-  form.reset();
+  resetBatteryForm();
   renderAll();
 };
 
