@@ -71,6 +71,7 @@ const statBatteries = el("statBatteries");
 const stockSubmit = el("stockSubmit");
 const stockCancel = el("stockCancel");
 const batterySubmit = el("batterySubmit");
+const batteryCancel = el("batteryCancel");
 const stockSortKey = el("stockSortKey");
 const stockSortDir = el("stockSortDir");
 const stockBatterySort = el("stockBatterySort");
@@ -729,6 +730,9 @@ const setStockFormMode = (isEditing) => {
 const setBatteryFormMode = (isEditing) => {
   if (!batterySubmit) return;
   batterySubmit.textContent = isEditing ? "Mettre à jour la batterie" : "Ajouter la batterie";
+  if (batteryCancel) {
+    batteryCancel.classList.toggle("hidden", !isEditing);
+  }
 };
 
 const resetBatteryForm = () => {
@@ -1199,6 +1203,12 @@ batteryForm.addEventListener("submit", (event) => {
   event.preventDefault();
   addBattery(event.target);
 });
+
+if (batteryCancel) {
+  batteryCancel.addEventListener("click", () => {
+    resetBatteryForm();
+  });
+}
 
 maintenanceForm.addEventListener("submit", (event) => {
   event.preventDefault();

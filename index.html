@@ -96,7 +96,10 @@
           Notes
           <input type="text" name="notes" maxlength="120" placeholder="Stockage a 3.8V" />
         </label>
-        <button type="submit" class="primary" id="batterySubmit">Ajouter la batterie</button>
+        <div class="form-actions full">
+          <button type="submit" class="primary" id="batterySubmit">Ajouter la batterie</button>
+          <button type="button" class="secondary hidden" id="batteryCancel">Annuler modification</button>
+        </div>
       </form>
       <div class="stock-tools">
         <label>
