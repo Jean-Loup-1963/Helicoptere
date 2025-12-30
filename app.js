@@ -2,6 +2,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = window.APP_CONFIG?.SUPABASE_ANON_KEY || "";
+const isConfigValid = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const DEFAULT_MODEL_NAME = "ALIGN TREX 150 DFC";
 const DEFAULT_THEME = "#c0501a";
@@ -1677,6 +1678,11 @@ const handleAuthState = async (user) => {
 };
 
 const bootstrapAuth = async () => {
+  if (!isConfigValid) {
+    setAuthView(false);
+    setAuthStatus("Configuration Supabase manquante. Remplissez config.js.");
+    return;
+  }
   if (authForm) {
     authForm.addEventListener("submit", async (event) => {
       event.preventDefault();
