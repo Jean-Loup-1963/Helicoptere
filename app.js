@@ -1,7 +1,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const SUPABASE_URL = "https://ftesjnnwquwyvcvdwwfc.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_zBEiEQoEoxwJEe_S03UZzA_PMD1L2jF";
+const SUPABASE_URL = window.APP_CONFIG?.SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = window.APP_CONFIG?.SUPABASE_ANON_KEY || "";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const DEFAULT_MODEL_NAME = "ALIGN TREX 150 DFC";
 const DEFAULT_THEME = "#c0501a";
