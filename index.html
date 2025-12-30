@@ -7,7 +7,34 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="bg-pattern" aria-hidden="true"></div>
+  <div class="auth-bar hidden" id="userBar">
+    <span id="userEmail"></span>
+    <span class="meta" id="syncStatus"></span>
+    <button type="button" class="secondary" id="signOutBtn">Se deconnecter</button>
+  </div>
+
+  <section class="auth-card" id="authPanel">
+    <h2>Connexion</h2>
+    <p class="meta">Connectez-vous pour synchroniser vos donnees.</p>
+    <form id="authForm" class="form-grid">
+      <label>
+        Email
+        <input type="email" id="authEmail" required autocomplete="email" />
+      </label>
+      <label>
+        Mot de passe
+        <input type="password" id="authPassword" required autocomplete="current-password" />
+      </label>
+      <div class="form-actions full">
+        <button type="submit" class="primary" id="signInBtn">Se connecter</button>
+        <button type="button" class="secondary" id="signUpBtn">Creer un compte</button>
+      </div>
+      <p class="meta full" id="authStatus"></p>
+    </form>
+  </section>
+
+  <div id="appContent" class="hidden">
+    <div class="bg-pattern" aria-hidden="true"></div>
   <header class="hero">
     <div>
       <p class="eyebrow">Carnet de bord</p>
@@ -306,10 +333,11 @@
   </main>
 
   <footer class="footer">
-    <p>Données en local uniquement (localStorage). Aucun compte, aucune installation. — © Jean-Loup</p>
+    <p>Donnees synchronisees avec Supabase. Un compte est requis. — © Jean-Loup</p>
   </footer>
 
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
+  </div>
 </body>
 </html>
 

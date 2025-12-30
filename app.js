@@ -1,4 +1,8 @@
-const STORAGE_KEY = "heliAppData";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+const SUPABASE_URL = "https://ftesjnnwquwyvcvdwwfc.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_zBEiEQoEoxwJEe_S03UZzA_PMD1L2jF";
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const DEFAULT_MODEL_NAME = "ALIGN TREX 150 DFC";
 const DEFAULT_THEME = "#c0501a";
 
@@ -43,7 +47,30 @@ const defaultData = {
   settings: cloneData(defaultSettings)
 };
 
+let currentUser = null;
+let appInitialized = false;
+
+const setAuthStatus = (message = "") => {
+  if (authStatus) authStatus.textContent = message;
+};
+
+const setSyncStatus = (message = "") => {
+  if (syncStatus) syncStatus.textContent = message;
+};
+
 const el = (id) => document.getElementById(id);
+
+const authPanel = el("authPanel");
+const authForm = el("authForm");
+const authEmail = el("authEmail");
+const authPassword = el("authPassword");
+const authStatus = el("authStatus");
+const signUpBtn = el("signUpBtn");
+const userBar = el("userBar");
+const userEmail = el("userEmail");
+const signOutBtn = el("signOutBtn");
+const syncStatus = el("syncStatus");
+const appContent = el("appContent");
 
 const flightForm = document.getElementById("flightForm");
 const batteryForm = document.getElementById("batteryForm");
@@ -153,26 +180,64 @@ const normalizeImported = (incoming) => {
     return { models: [model], activeModelId: model.id, settings };
 };
 
-const loadData = () => {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
+const loadData = async () => {
+  if (!currentUser) {
     const model = createModel();
     return { models: [model], activeModelId: model.id, settings: cloneData(defaultSettings) };
   }
-  try {
-    const parsed = JSON.parse(raw);
-    return normalizeImported(parsed);
-  } catch {
+
+  const { data: row, error } = await supabase
+    .from("app_data")
+    .select("payload")
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if (error) {
+    setSyncStatus("Erreur de chargement Supabase.");
+    console.error(error);
     const model = createModel();
     return { models: [model], activeModelId: model.id, settings: cloneData(defaultSettings) };
   }
+
+  if (!row || !row.payload) {
+    const model = createModel();
+    const initial = { models: [model], activeModelId: model.id, settings: cloneData(defaultSettings) };
+    await persistData(initial);
+    return initial;
+  }
+
+  return normalizeImported(row.payload);
 };
 
-const saveData = (data) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+const persistData = async (payload) => {
+  if (!currentUser) return;
+  const { error } = await supabase
+    .from("app_data")
+    .upsert({
+      user_id: currentUser.id,
+      payload,
+      updated_at: new Date().toISOString()
+    });
+  if (error) {
+    setSyncStatus("Echec de synchronisation.");
+    console.error(error);
+  } else {
+    setSyncStatus("Synchronise.");
+  }
 };
 
-let data = loadData();
+let saveTimer = null;
+const saveData = (nextData) => {
+  data = nextData;
+  if (!currentUser) return;
+  if (saveTimer) clearTimeout(saveTimer);
+  setSyncStatus("Synchronisation...");
+  saveTimer = setTimeout(() => {
+    persistData(data);
+  }, 400);
+};
+
+let data = cloneData(defaultData);
 let editingStockId = null;
 let editingBatteryId = null;
 let tabMenuHandlersReady = false;
@@ -1318,20 +1383,95 @@ if (batteryForm && batteryForm.cells) {
   batteryForm.cells.addEventListener("input", updateBatteryVoltageField);
 }
 
-const init = () => {
+const setAuthView = (isAuthenticated) => {
+  if (authPanel) authPanel.classList.toggle("hidden", isAuthenticated);
+  if (appContent) appContent.classList.toggle("hidden", !isAuthenticated);
+  if (userBar) userBar.classList.toggle("hidden", !isAuthenticated);
+};
+
+const initApp = async () => {
+  data = await loadData();
   applyThemeColor(getActiveModel().themeColor);
   renderTabs();
   renderThemePresets();
   renderAll();
-  data.settings.lastTab = "flights";
-  setActiveTab("flights");
+  setActiveTab(data.settings.lastTab || "flights");
   stockSortKey.value = getStockSort().key;
   stockSortDir.value = getStockSort().dir;
   syncBatterySortControls();
   updateBatteryVoltageField();
+  appInitialized = true;
 };
 
-init();
+const handleAuthState = async (user) => {
+  currentUser = user;
+  if (!user) {
+    setAuthView(false);
+    setAuthStatus("Connectez-vous pour demarrer.");
+    setSyncStatus("");
+    data = cloneData(defaultData);
+    appInitialized = false;
+    return;
+  }
+
+  if (userEmail) userEmail.textContent = user.email || "";
+  setAuthView(true);
+  setAuthStatus("");
+  setSyncStatus("");
+  await initApp();
+};
+
+const bootstrapAuth = async () => {
+  if (authForm) {
+    authForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const email = authEmail.value.trim();
+      const password = authPassword.value;
+      if (!email || !password) {
+        setAuthStatus("Email et mot de passe requis.");
+        return;
+      }
+      setAuthStatus("Connexion...");
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setAuthStatus(error.message);
+      }
+    });
+  }
+
+  if (signUpBtn) {
+    signUpBtn.addEventListener("click", async () => {
+      const email = authEmail.value.trim();
+      const password = authPassword.value;
+      if (!email || !password) {
+        setAuthStatus("Email et mot de passe requis.");
+        return;
+      }
+      setAuthStatus("Creation du compte...");
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        setAuthStatus(error.message);
+      } else {
+        setAuthStatus("Compte cree. Verifiez votre email si besoin.");
+      }
+    });
+  }
+
+  if (signOutBtn) {
+    signOutBtn.addEventListener("click", async () => {
+      await supabase.auth.signOut();
+    });
+  }
+
+  supabase.auth.onAuthStateChange((_event, session) => {
+    handleAuthState(session?.user ?? null);
+  });
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  handleAuthState(sessionData?.session?.user ?? null);
+};
+
+bootstrapAuth();
 
 
 
