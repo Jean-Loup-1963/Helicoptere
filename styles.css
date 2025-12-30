@@ -59,6 +59,19 @@ body {
   margin-top: 0;
 }
 
+.link-button {
+  border: none;
+  background: none;
+  color: var(--accent-dark);
+  font-weight: 700;
+  padding: 0;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+
 .hero {
   display: flex;
   flex-wrap: wrap;

@@ -58,6 +58,12 @@ const setSyncStatus = (message = "") => {
   if (syncStatus) syncStatus.textContent = message;
 };
 
+const setPasswordRecoveryMode = (isRecovery) => {
+  if (updatePasswordBtn) updatePasswordBtn.classList.toggle("hidden", !isRecovery);
+  if (signInBtn) signInBtn.classList.toggle("hidden", isRecovery);
+  if (signUpBtn) signUpBtn.classList.toggle("hidden", isRecovery);
+};
+
 const el = (id) => document.getElementById(id);
 
 const authPanel = el("authPanel");
@@ -66,6 +72,10 @@ const authEmail = el("authEmail");
 const authPassword = el("authPassword");
 const authStatus = el("authStatus");
 const signUpBtn = el("signUpBtn");
+const signInBtn = el("signInBtn");
+const updatePasswordBtn = el("updatePasswordBtn");
+const resetPasswordBtn = el("resetPasswordBtn");
+const resendEmailBtn = el("resendEmailBtn");
 const userBar = el("userBar");
 const userEmail = el("userEmail");
 const signOutBtn = el("signOutBtn");
@@ -186,41 +196,284 @@ const loadData = async () => {
     return { models: [model], activeModelId: model.id, settings: cloneData(defaultSettings) };
   }
 
-  const { data: row, error } = await supabase
-    .from("app_data")
-    .select("payload")
-    .eq("user_id", currentUser.id)
-    .maybeSingle();
+  const userId = currentUser.id;
+  const [
+    modelsRes,
+    flightsRes,
+    batteriesRes,
+    maintenanceRes,
+    stockRes,
+    purchasesRes,
+    settingsRes
+  ] = await Promise.all([
+    supabase.from("models").select("*").eq("user_id", userId),
+    supabase.from("flights").select("*").eq("user_id", userId),
+    supabase.from("batteries").select("*").eq("user_id", userId),
+    supabase.from("maintenance").select("*").eq("user_id", userId),
+    supabase.from("stock").select("*").eq("user_id", userId),
+    supabase.from("purchases").select("*").eq("user_id", userId),
+    supabase.from("settings").select("*").eq("user_id", userId).maybeSingle()
+  ]);
 
-  if (error) {
+  const errors = [
+    modelsRes.error,
+    flightsRes.error,
+    batteriesRes.error,
+    maintenanceRes.error,
+    stockRes.error,
+    purchasesRes.error,
+    settingsRes.error
+  ].filter(Boolean);
+
+  if (errors.length > 0) {
     setSyncStatus("Erreur de chargement Supabase.");
-    console.error(error);
+    console.error(errors);
     const model = createModel();
     return { models: [model], activeModelId: model.id, settings: cloneData(defaultSettings) };
   }
 
-  if (!row || !row.payload) {
+  const models = (modelsRes.data || []).map((row) => ({
+    id: row.id,
+    name: row.name || "Modele",
+    themeColor: row.theme_color || DEFAULT_THEME,
+    flights: [],
+    batteries: [],
+    maintenance: [],
+    stock: [],
+    purchases: []
+  }));
+
+  if (models.length === 0) {
     const model = createModel();
     const initial = { models: [model], activeModelId: model.id, settings: cloneData(defaultSettings) };
     await persistData(initial);
     return initial;
   }
 
-  return normalizeImported(row.payload);
+  const groupByModel = (rows) => {
+    const bucket = new Map();
+    rows.forEach((row) => {
+      if (!bucket.has(row.model_id)) bucket.set(row.model_id, []);
+      bucket.get(row.model_id).push(row);
+    });
+    return bucket;
+  };
+
+  const flightsByModel = groupByModel(flightsRes.data || []);
+  const batteriesByModel = groupByModel(batteriesRes.data || []);
+  const maintenanceByModel = groupByModel(maintenanceRes.data || []);
+  const stockByModel = groupByModel(stockRes.data || []);
+  const purchasesByModel = groupByModel(purchasesRes.data || []);
+
+  models.forEach((model) => {
+    model.flights = (flightsByModel.get(model.id) || []).map((row) => ({
+      id: row.id,
+      date: row.date || "",
+      duration: row.duration ?? 0,
+      batteryId: row.battery_id || "",
+      notes: row.notes || ""
+    }));
+    model.batteries = (batteriesByModel.get(model.id) || []).map((row) => ({
+      id: row.id,
+      name: row.name || "",
+      number: row.number || "",
+      capacity: row.capacity ?? null,
+      dischargeRate: row.discharge_rate ?? null,
+      cells: row.cells ?? null,
+      voltage: row.voltage ?? null,
+      cycles: row.cycles ?? 0,
+      lastUsed: row.last_used || null,
+      notes: row.notes || ""
+    }));
+    model.maintenance = (maintenanceByModel.get(model.id) || []).map((row) => ({
+      id: row.id,
+      title: row.title || "",
+      intervalDays: row.interval_days ?? 0,
+      intervalFlights: row.interval_flights ?? 0,
+      lastDoneDate: row.last_done_date || null,
+      lastDoneFlights: row.last_done_flights ?? 0,
+      notes: row.notes || ""
+    }));
+    model.stock = (stockByModel.get(model.id) || []).map((row) => ({
+      id: row.id,
+      name: row.name || "",
+      reference: row.reference || "",
+      quantity: row.quantity ?? 0,
+      minimum: row.minimum ?? 0,
+      location: row.location || ""
+    }));
+    model.purchases = (purchasesByModel.get(model.id) || []).map((row) => ({
+      id: row.id,
+      date: row.date || "",
+      name: row.name || "",
+      reference: row.reference || "",
+      quantity: row.quantity ?? 1,
+      price: row.price ?? null,
+      store: row.store || "",
+      notes: row.notes || ""
+    }));
+  });
+
+  const settingsRow = settingsRes.data || null;
+  const settings = normalizeSettings({
+    tabOrder: settingsRow?.tab_order,
+    stockSort: settingsRow?.stock_sort,
+    stockBatterySort: settingsRow?.stock_battery_sort,
+    stockBatteryNumberPlacement: settingsRow?.stock_battery_number_placement,
+    lastTab: settingsRow?.last_tab
+  });
+
+  const activeModelId = models.find((model) => model.id === settingsRow?.active_model_id)?.id || models[0].id;
+
+  return { models, activeModelId, settings };
 };
 
 const persistData = async (payload) => {
   if (!currentUser) return;
-  const { error } = await supabase
-    .from("app_data")
-    .upsert({
-      user_id: currentUser.id,
-      payload,
-      updated_at: new Date().toISOString()
+  const userId = currentUser.id;
+  const toNullable = (value) => (value === "" || value === undefined ? null : value);
+
+  const models = [];
+  const flights = [];
+  const batteries = [];
+  const maintenance = [];
+  const stock = [];
+  const purchases = [];
+
+  payload.models.forEach((model) => {
+    models.push({
+      id: model.id,
+      user_id: userId,
+      name: model.name || "Modele",
+      theme_color: model.themeColor || DEFAULT_THEME
     });
-  if (error) {
+
+    model.flights.forEach((flight) => {
+      flights.push({
+        id: flight.id,
+        user_id: userId,
+        model_id: model.id,
+        date: toNullable(flight.date),
+        duration: flight.duration ?? 0,
+        battery_id: toNullable(flight.batteryId),
+        notes: toNullable(flight.notes)
+      });
+    });
+
+    model.batteries.forEach((battery) => {
+      batteries.push({
+        id: battery.id,
+        user_id: userId,
+        model_id: model.id,
+        name: battery.name || "Batterie",
+        number: toNullable(battery.number),
+        capacity: battery.capacity ?? null,
+        discharge_rate: battery.dischargeRate ?? null,
+        cells: battery.cells ?? null,
+        voltage: battery.voltage ?? null,
+        cycles: battery.cycles ?? 0,
+        last_used: toNullable(battery.lastUsed),
+        notes: toNullable(battery.notes)
+      });
+    });
+
+    model.maintenance.forEach((task) => {
+      maintenance.push({
+        id: task.id,
+        user_id: userId,
+        model_id: model.id,
+        title: task.title || "Maintenance",
+        interval_days: task.intervalDays ?? 0,
+        interval_flights: task.intervalFlights ?? 0,
+        last_done_date: toNullable(task.lastDoneDate),
+        last_done_flights: task.lastDoneFlights ?? 0,
+        notes: toNullable(task.notes)
+      });
+    });
+
+    model.stock.forEach((item) => {
+      stock.push({
+        id: item.id,
+        user_id: userId,
+        model_id: model.id,
+        name: item.name || "Piece",
+        reference: toNullable(item.reference),
+        quantity: item.quantity ?? 0,
+        minimum: item.minimum ?? 0,
+        location: toNullable(item.location)
+      });
+    });
+
+    model.purchases.forEach((purchase) => {
+      purchases.push({
+        id: purchase.id,
+        user_id: userId,
+        model_id: model.id,
+        date: toNullable(purchase.date),
+        name: purchase.name || "Achat",
+        reference: toNullable(purchase.reference),
+        quantity: purchase.quantity ?? 1,
+        price: purchase.price ?? null,
+        store: toNullable(purchase.store),
+        notes: toNullable(purchase.notes)
+      });
+    });
+  });
+
+  const errors = [];
+
+  const deleteRows = async (table) => {
+    const { error } = await supabase.from(table).delete().eq("user_id", userId);
+    if (error) errors.push(error);
+  };
+
+  await deleteRows("flights");
+  await deleteRows("batteries");
+  await deleteRows("maintenance");
+  await deleteRows("stock");
+  await deleteRows("purchases");
+  await deleteRows("models");
+
+  if (models.length) {
+    const { error } = await supabase.from("models").insert(models);
+    if (error) errors.push(error);
+  }
+  if (flights.length) {
+    const { error } = await supabase.from("flights").insert(flights);
+    if (error) errors.push(error);
+  }
+  if (batteries.length) {
+    const { error } = await supabase.from("batteries").insert(batteries);
+    if (error) errors.push(error);
+  }
+  if (maintenance.length) {
+    const { error } = await supabase.from("maintenance").insert(maintenance);
+    if (error) errors.push(error);
+  }
+  if (stock.length) {
+    const { error } = await supabase.from("stock").insert(stock);
+    if (error) errors.push(error);
+  }
+  if (purchases.length) {
+    const { error } = await supabase.from("purchases").insert(purchases);
+    if (error) errors.push(error);
+  }
+
+  const { error: settingsError } = await supabase.from("settings").upsert({
+    user_id: userId,
+    tab_order: payload.settings.tabOrder,
+    stock_sort: payload.settings.stockSort,
+    stock_battery_sort: payload.settings.stockBatterySort,
+    stock_battery_number_placement: payload.settings.stockBatteryNumberPlacement,
+    last_tab: payload.settings.lastTab,
+    active_model_id: payload.activeModelId,
+    updated_at: new Date().toISOString()
+  });
+  if (settingsError) errors.push(settingsError);
+
+  if (errors.length > 0) {
     setSyncStatus("Echec de synchronisation.");
-    console.error(error);
+    console.error(errors);
   } else {
     setSyncStatus("Synchronise.");
   }
@@ -1409,6 +1662,7 @@ const handleAuthState = async (user) => {
     setAuthView(false);
     setAuthStatus("Connectez-vous pour demarrer.");
     setSyncStatus("");
+    setPasswordRecoveryMode(false);
     data = cloneData(defaultData);
     appInitialized = false;
     return;
@@ -1418,6 +1672,7 @@ const handleAuthState = async (user) => {
   setAuthView(true);
   setAuthStatus("");
   setSyncStatus("");
+  setPasswordRecoveryMode(false);
   await initApp();
 };
 
@@ -1457,13 +1712,76 @@ const bootstrapAuth = async () => {
     });
   }
 
+  if (resetPasswordBtn) {
+    resetPasswordBtn.addEventListener("click", async () => {
+      const email = authEmail.value.trim();
+      if (!email) {
+        setAuthStatus("Entrez votre email pour reinitialiser.");
+        return;
+      }
+      setAuthStatus("Envoi du lien de reinitialisation...");
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin
+      });
+      if (error) {
+        setAuthStatus(error.message);
+      } else {
+        setAuthStatus("Lien envoye. Verifiez votre email.");
+      }
+    });
+  }
+
+  if (resendEmailBtn) {
+    resendEmailBtn.addEventListener("click", async () => {
+      const email = authEmail.value.trim();
+      if (!email) {
+        setAuthStatus("Entrez votre email pour renvoyer.");
+        return;
+      }
+      setAuthStatus("Renvoi de l'email...");
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email
+      });
+      if (error) {
+        setAuthStatus(error.message);
+      } else {
+        setAuthStatus("Email envoye.");
+      }
+    });
+  }
+
+  if (updatePasswordBtn) {
+    updatePasswordBtn.addEventListener("click", async () => {
+      const password = authPassword.value;
+      if (!password) {
+        setAuthStatus("Entrez le nouveau mot de passe.");
+        return;
+      }
+      setAuthStatus("Mise a jour du mot de passe...");
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) {
+        setAuthStatus(error.message);
+      } else {
+        setAuthStatus("Mot de passe mis a jour. Connectez-vous.");
+        setPasswordRecoveryMode(false);
+      }
+    });
+  }
+
   if (signOutBtn) {
     signOutBtn.addEventListener("click", async () => {
       await supabase.auth.signOut();
     });
   }
 
-  supabase.auth.onAuthStateChange((_event, session) => {
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY") {
+      setAuthView(true);
+      setPasswordRecoveryMode(true);
+      setAuthStatus("Entrez un nouveau mot de passe puis validez.");
+      return;
+    }
     handleAuthState(session?.user ?? null);
   });
 
