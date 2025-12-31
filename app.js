@@ -1344,6 +1344,7 @@ const exportData = async () => {
   if (importStatus) {
     importStatus.textContent = "Votre navigateur ne propose pas le choix du dossier. Le fichier est enregistre dans le dossier Telechargements (Downloads).";
   }
+  alert("Votre navigateur ne propose pas la boite de sauvegarde. Le fichier est enregistre dans Telechargements (Downloads). Vous pouvez activer l'option Chrome: Parametres > Telechargements > Toujours demander ou enregistrer.");
   const blob = new Blob([payload], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
