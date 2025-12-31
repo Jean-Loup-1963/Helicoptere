@@ -1,0 +1,61 @@
+{
+  "models": [
+    {
+      "id": "206cc2c4-2760-4f79-b65d-d2a23fd8de1c",
+      "name": "ALIGN TREX 150 DFC",
+      "themeColor": "#c0501a",
+      "flights": [],
+      "batteries": [
+        {
+          "id": "9e35500d-c87b-4d59-b945-e9a567d5246f",
+          "name": "ALIGN",
+          "number": "01",
+          "capacity": 300,
+          "dischargeRate": 30,
+          "cells": 2,
+          "voltage": 7.4,
+          "cycles": 0,
+          "lastUsed": null,
+          "notes": ""
+        },
+        {
+          "id": "40308a7a-a6a1-4d38-bdef-5bed19221be5",
+          "name": "ALIGN",
+          "number": "02",
+          "capacity": 300,
+          "dischargeRate": 30,
+          "cells": 2,
+          "voltage": 7.4,
+          "notes": "",
+          "cycles": 0,
+          "lastUsed": null
+        }
+      ],
+      "maintenance": [],
+      "stock": [],
+      "purchases": []
+    }
+  ],
+  "activeModelId": "206cc2c4-2760-4f79-b65d-d2a23fd8de1c",
+  "settings": {
+    "tabOrder": [
+      "flights",
+      "batteries",
+      "maintenance",
+      "stock",
+      "purchases",
+      "backup",
+      "settings"
+    ],
+    "stockSort": {
+      "key": "reference",
+      "dir": "asc"
+    },
+    "stockBatterySort": {
+      "key": "number",
+      "dir": "asc"
+    },
+    "stockBatteryNumberPlacement": "first",
+    "lastTab": "backup"
+  }
+}

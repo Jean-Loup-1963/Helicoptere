@@ -1312,9 +1312,38 @@ const deletePurchase = (id) => {
   renderPurchases();
 };
 
-const exportData = () => {
+const exportData = async () => {
   const fileName = "align-trex-150-dfc.json";
   const payload = JSON.stringify(data, null, 2);
+
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: fileName,
+        types: [
+          {
+            description: "JSON",
+            accept: { "application/json": [".json"] }
+          }
+        ]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(payload);
+      await writable.close();
+      if (importStatus) importStatus.textContent = "Export termine.";
+      return;
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        if (importStatus) importStatus.textContent = "Export annule.";
+        return;
+      }
+      console.error(error);
+    }
+  }
+
+  if (importStatus) {
+    importStatus.textContent = "Votre navigateur ne propose pas le choix du dossier. Le fichier est enregistre dans le dossier Telechargements (Downloads).";
+  }
   const blob = new Blob([payload], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -1323,6 +1352,7 @@ const exportData = () => {
   document.body.append(link);
   link.click();
   link.remove();
+  if (importStatus) importStatus.textContent = "Export termine.";
   setTimeout(() => URL.revokeObjectURL(url), 500);
 };
 
