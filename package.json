@@ -5,6 +5,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "build": "node scripts/generate-config.js",
     "start": "http-server -p 5173 ."
   },
   "devDependencies": {

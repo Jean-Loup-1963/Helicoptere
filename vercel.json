@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "**/*", "use": "@vercel/static" }
-  ]
+  "buildCommand": "npm run build",
+  "outputDirectory": "."
 }
