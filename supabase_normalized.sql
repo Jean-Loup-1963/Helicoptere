@@ -88,6 +88,14 @@ alter table stock enable row level security;
 alter table purchases enable row level security;
 alter table settings enable row level security;
 
+drop policy if exists "models_user" on models;
+drop policy if exists "flights_user" on flights;
+drop policy if exists "batteries_user" on batteries;
+drop policy if exists "maintenance_user" on maintenance;
+drop policy if exists "stock_user" on stock;
+drop policy if exists "purchases_user" on purchases;
+drop policy if exists "settings_user" on settings;
+
 create policy "models_user" on models for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "flights_user" on flights for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "batteries_user" on batteries for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
